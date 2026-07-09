@@ -60,7 +60,7 @@ logs/
 *.swp
 *.tmp
 *.bak
-
+*.md
 # OS-specific files
 .DS_Store
 Thumbs.db
