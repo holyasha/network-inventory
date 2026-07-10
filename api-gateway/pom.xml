@@ -6,12 +6,11 @@
 		<groupId>com.network.inventory</groupId>
 		<artifactId>network-inventory-root</artifactId>
 		<version>1.0</version>
-		<relativePath/>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
-	<groupId>com.network.inventory</groupId>
+
 	<artifactId>api-gateway</artifactId>
-	<version>1.0</version>
-	<name/>API-Gateway</name>
+	<name>API Gateway</name>
 
 	<dependencies>
 		<dependency>

@@ -6,11 +6,10 @@
 		<groupId>com.network.inventory</groupId>
 		<artifactId>network-inventory-root</artifactId>
 		<version>1.0</version>
-		<relativePath/>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
-	<groupId>com.network.inventory</groupId>
+
 	<artifactId>location-service</artifactId>
-	<version>1.0</version>
 	<name>Location Service</name>
 	
 	<dependencies>
