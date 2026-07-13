@@ -2,11 +2,11 @@ package com.network.inventory.device_service.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.network.inventory.device_service.entity.Device;
-import java.util.List;
-
 
 public interface DeviceRepository extends JpaRepository<Device, Long>{
 
@@ -14,7 +14,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long>{
 
     Optional<Device> findBySerialNumber(String serialNumber);
 
-    List<Device> findByStatusId(Long statusId);
+    Page<Device> findByStatusId(Long statusId, Pageable pageable);
 
-    List<Device> findByDeviceModelId(Long deviceModelId);
+    Page<Device> findByDeviceModelId(Long deviceModelId, Pageable pageable);
 }
