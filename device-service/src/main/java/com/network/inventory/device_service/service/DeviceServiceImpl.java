@@ -1,7 +1,5 @@
 package com.network.inventory.device_service.service;
 
-import com.network.inventory.device_service.dto.response.DeviceResponse.DeviceModelInfo;
-import com.network.inventory.device_service.dto.response.DeviceResponse.DeviceStatusInfo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,19 +22,15 @@ import com.network.inventory.device_service.repository.DeviceStatusRepository;
 @Transactional(readOnly = true)
 public class DeviceServiceImpl implements DeviceService{
 
-    private final DeviceResponse.DeviceStatusInfo deviceStatusInfo;
-    private final DeviceResponse.DeviceModelInfo deviceModelInfo;
     private final DeviceRepository deviceRepository;
     private final DeviceModelRepository modelRepository;
     private final DeviceStatusRepository statusRepository;
 
     public DeviceServiceImpl(DeviceRepository deviceRepository, DeviceModelRepository modelRepository,
-            DeviceStatusRepository statusRepository, DeviceResponse.DeviceModelInfo deviceModelInfo, DeviceResponse.DeviceStatusInfo deviceStatusInfo) {
+            DeviceStatusRepository statusRepository) {
         this.deviceRepository = deviceRepository;
         this.modelRepository = modelRepository;
         this.statusRepository = statusRepository;
-        this.deviceModelInfo = deviceModelInfo;
-        this.deviceStatusInfo = deviceStatusInfo;
     }
 
     @Override
