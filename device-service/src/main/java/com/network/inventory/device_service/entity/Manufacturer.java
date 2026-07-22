@@ -22,7 +22,7 @@ public class Manufacturer {
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 
-    @Column(nullable = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String country;
 
     @Column(name = "created_at",nullable = false, updatable = false)

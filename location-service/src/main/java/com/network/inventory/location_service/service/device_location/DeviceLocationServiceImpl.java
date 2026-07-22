@@ -67,6 +67,7 @@ public class DeviceLocationServiceImpl implements DeviceLocationService {
         return mapToResponse(deviceLocationRepository.findByDeviceId(deviceId).orElseThrow(() -> new ResourceNotFoundException("Размещение устройства с id " + deviceId + " не найдено")));
     }
 
+    @Transactional
     @Override
     public void deleteDeviceLocation(Long id) {
         if(!deviceLocationRepository.existsById(id)) {

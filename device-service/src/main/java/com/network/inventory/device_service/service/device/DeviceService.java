@@ -1,10 +1,10 @@
-package com.network.inventory.device_service.service;
+package com.network.inventory.device_service.service.device;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import com.network.inventory.device_service.dto.request.CreateDeviceRequest;
-import com.network.inventory.device_service.dto.request.UpdateDeviceRequest;
+import com.network.inventory.device_service.dto.request.device.CreateDeviceRequest;
+import com.network.inventory.device_service.dto.request.device.UpdateDeviceRequest;
 import com.network.inventory.device_service.dto.response.DeviceListItemResponse;
 import com.network.inventory.device_service.dto.response.DeviceResponse;
 

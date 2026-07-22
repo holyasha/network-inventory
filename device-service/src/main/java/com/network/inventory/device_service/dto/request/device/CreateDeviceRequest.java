@@ -1,4 +1,4 @@
-package com.network.inventory.device_service.dto.request;
+package com.network.inventory.device_service.dto.request.device;
 
 import java.time.LocalDate;
 
