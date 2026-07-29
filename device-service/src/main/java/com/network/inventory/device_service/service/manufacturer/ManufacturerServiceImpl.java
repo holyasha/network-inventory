@@ -39,10 +39,14 @@ public class ManufacturerServiceImpl implements ManufacturerService{
     public ManufacturerResponse updateManufacturer(Long id, UpdateManufacturerRequest request) {
         Manufacturer manufacturer = manufacturerRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Производитель с id " + id + " не найден"));
-        if (manufacturerRepository.findByName(request.name()).isPresent()) {
-            throw new DuplicateResourceException("Производитель с наименованием " + request.name() + " уже существует");
-        }
+        if (request.name()!= null) {
+        manufacturerRepository.findByName(request.name()).ifPresent(existing -> {
+            if (!existing.getId().equals(id)) {
+                throw new DuplicateResourceException("Производитель с наименованием " + request.name() + " уже существует");
+            }
+        });
         manufacturer.setName(request.name());
+        }
         if (request.country()!=null) manufacturer.setCountry(request.country());
        Manufacturer saved = manufacturerRepository.save(manufacturer);
        return mapToResponse(saved); 

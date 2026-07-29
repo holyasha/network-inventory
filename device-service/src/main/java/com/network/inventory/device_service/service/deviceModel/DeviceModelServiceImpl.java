@@ -60,15 +60,15 @@ public class DeviceModelServiceImpl implements DeviceModelService {
             .orElseThrow(() -> new ResourceNotFoundException("Модель устройства с id " + id + " не найдена"));
         
         if (request.manufacturerId()!= null) {
-            deviceModelRepository.findByModelAndManufacturer(request.model(), request.manufacturerId())
-            .ifPresent(existing -> {
-                if(existing.getId().equals(id)) {
-                    throw new DuplicateResourceException("Данная модель " + request.model() + " устройства от производителя с id " + request.manufacturerId() + " уже существует!");
-                }
             Manufacturer manufacturer = manufacturerRepository.findById(request.manufacturerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Производитель с id " + request.manufacturerId() + " не найден"));
-            deviceModel.setManufacturer(manufacturer);
+            deviceModelRepository.findByModelAndManufacturer(request.model(), request.manufacturerId())
+            .ifPresent(existing -> {
+                if(!existing.getId().equals(id)) {
+                    throw new DuplicateResourceException("Данная модель " + request.model() + " устройства от производителя с id " + request.manufacturerId() + " уже существует!");
+                }
             });
+            deviceModel.setManufacturer(manufacturer);
         }
 
         if(request.deviceTypeId()!=null) {
