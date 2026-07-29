@@ -33,6 +33,7 @@ public class DeviceModelServiceImpl implements DeviceModelService {
         this.deviceTypeRepository = deviceTypeRepository;
     }
 
+    @Transactional
     @Override
     public DeviceModelResponse createDeviceModel(CreateDeviceModelRequest request) {
         Manufacturer manufacturer = manufacturerRepository.findById(request.manufacturerId())
@@ -52,45 +53,67 @@ public class DeviceModelServiceImpl implements DeviceModelService {
         return mapToResponse(saved);
     }
 
+    @Transactional
     @Override
     public DeviceModelResponse updateDeviceModel(Long id, UpdateDeviceModelRequest request) {
         DeviceModel deviceModel = deviceModelRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Модель устройства с id " + id + " не найдена"));
         
         if (request.manufacturerId()!= null) {
-            
-            
+            deviceModelRepository.findByModelAndManufacturer(request.model(), request.manufacturerId())
+            .ifPresent(existing -> {
+                if(existing.getId().equals(id)) {
+                    throw new DuplicateResourceException("Данная модель " + request.model() + " устройства от производителя с id " + request.manufacturerId() + " уже существует!");
+                }
+            Manufacturer manufacturer = manufacturerRepository.findById(request.manufacturerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Производитель с id " + request.manufacturerId() + " не найден"));
+            deviceModel.setManufacturer(manufacturer);
+            });
         }
+
+        if(request.deviceTypeId()!=null) {
+            DeviceType deviceType = deviceTypeRepository.findById(request.deviceTypeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Тип устройства с id " + request.deviceTypeId() + " не найден"));
+            deviceModel.setDeviceType(deviceType);
+        }
+
+        if (request.model()!=null) {
+            deviceModel.setModel(request.model());
+        }
+        deviceModel.setDescription(request.description());
+        deviceModel.setPortsCount(request.portsCount());
+        deviceModel.setManagementType(request.managementType());
+        DeviceModel updated = deviceModelRepository.save(deviceModel);
+        return mapToResponse(updated);
     }
 
     @Override
     public DeviceModelResponse getDeviceModelById(Long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDeviceModelById'");
+        return mapToResponse(deviceModelRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Модель устройства с id " + id + " не найдена")));
     }
 
     @Override
     public List<DeviceModelResponse> getDeviceModelByManufacturerId(Long manufacturerId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDeviceModelByManufacturerId'");
+        return deviceModelRepository.findByManufacturerId(manufacturerId).stream().map(this::mapToResponse).toList();
     }
 
     @Override
     public List<DeviceModelResponse> getDeviceModelsByDeviceTypeId(Long deviceTypeId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDeviceModelsByDeviceTypeId'");
+        return deviceModelRepository.findByDeviceTypeId(deviceTypeId).stream().map(this::mapToResponse).toList();
     }
 
     @Override
     public List<DeviceModelResponse> getAllDeviceModels() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getAllDeviceModels'");
+        return deviceModelRepository.findAll().stream().map(this::mapToResponse).toList();
     }
 
     @Override
     public void deleteDeviceModel(Long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteDeviceModel'");
+        if (!deviceModelRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Модель устройства с id " + id + " не найдена");
+        }
+        deviceModelRepository.deleteById(id);
     }
     
     private DeviceModelResponse mapToResponse(DeviceModel dm) {
