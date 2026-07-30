@@ -1,6 +1,5 @@
 package com.network.inventory.network_service.repository;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -15,5 +14,5 @@ public interface IpAddressRepository extends JpaRepository<IpAddress, Long> {
 
     Page<IpAddress> findBySubnetId(Long subnetId, Pageable pageable);
 
-    List<IpAddress> findBySubnetIdAndAllocated(Long subnetId, Boolean allocated);
+    Page<IpAddress> findBySubnetIdAndAllocated(Long subnetId, Boolean allocated, Pageable pageable);
 }
