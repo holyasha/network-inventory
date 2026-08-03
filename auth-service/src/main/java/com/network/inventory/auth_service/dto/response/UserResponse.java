@@ -3,7 +3,7 @@ package com.network.inventory.auth_service.dto.response;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-public record UserReponse(
+public record UserResponse(
     Long id,
     String login,
     String email,
