@@ -74,7 +74,7 @@ public class DeviceStatusServiceImpl implements DeviceStatusService{
 
     @Transactional
     @Override
-    public void deleteDevieStatus(Long id) {
+    public void deleteDeviceStatus(Long id) {
         if(!deviceStatusRepository.existsById(id)) {
             throw new ResourceNotFoundException("Статус с id " + id + " не найден");
         }

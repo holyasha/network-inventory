@@ -19,5 +19,5 @@ public interface DeviceStatusService {
 
     List<DeviceStatusResponse> getAllStatuses();
 
-    void deleteDevieStatus(Long id);
+    void deleteDeviceStatus(Long id);
 }
