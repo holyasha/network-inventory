@@ -43,3 +43,4 @@ Thumbs.db
 # Docker
 postgres-data/
 kafka-data/
+secrets/

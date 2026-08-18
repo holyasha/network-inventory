@@ -1,0 +1,186 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres-inventory
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    secrets:
+      - pg_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - inventory-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - inventory-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    networks:
+      - inventory-network
+
+  device-service:
+    build: ./device-service
+    container_name: device-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/device_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    secrets:
+      - source: pg_password
+        target: spring.datasource.password
+    ports:
+      - "8081:8081"
+    networks:
+      - inventory-network
+
+  location-service:
+    build: ./location-service
+    container_name: location-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/location_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    secrets:
+      - source: pg_password
+        target: spring.datasource.password
+    ports:
+      - "8082:8082"
+    networks:
+      - inventory-network
+
+  network-service:
+    build: ./network-service
+    container_name: network-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/network_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    secrets:
+      - source: pg_password
+        target: spring.datasource.password
+    ports:
+      - "8083:8083"
+    networks:
+      - inventory-network
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    secrets:
+      - source: pg_password
+        target: spring.datasource.password
+    ports:
+      - "8084:8084"
+    networks:
+      - inventory-network
+
+  audit-service:
+    build: ./audit-service
+    container_name: audit-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/audit_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    secrets:
+      - source: pg_password
+        target: spring.datasource.password
+    ports:
+      - "8085:8085"
+    networks:
+      - inventory-network
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    depends_on:
+      - device-service
+      - location-service
+      - network-service
+      - auth-service
+      - audit-service
+    ports:
+      - "8080:8080"
+    networks:
+      - inventory-network
+
+volumes:
+  postgres-data:
+
+networks:
+  inventory-network:
+    driver: bridge
+
+secrets:
+  pg_password:
+    file: ./secrets/pg_password.txt

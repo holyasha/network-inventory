@@ -1,0 +1,5 @@
+CREATE DATABASE device_db;
+CREATE DATABASE location_db;
+CREATE DATABASE network_db;
+CREATE DATABASE auth_db;
+CREATE DATABASE audit_db;
