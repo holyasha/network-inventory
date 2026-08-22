@@ -11,7 +11,7 @@
 
 	<artifactId>device-service</artifactId>
 	<name>Device Service</name>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

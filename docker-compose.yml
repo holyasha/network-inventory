@@ -50,7 +50,9 @@ services:
       - inventory-network
 
   device-service:
-    build: ./device-service
+    build:
+      context: .
+      dockerfile: device-service/Dockerfile
     container_name: device-service
     restart: unless-stopped
     depends_on:
@@ -72,7 +74,9 @@ services:
       - inventory-network
 
   location-service:
-    build: ./location-service
+    build:
+      context: .
+      dockerfile: location-service/Dockerfile
     container_name: location-service
     restart: unless-stopped
     depends_on:
@@ -94,7 +98,9 @@ services:
       - inventory-network
 
   network-service:
-    build: ./network-service
+    build:
+      context: .
+      dockerfile: network-service/Dockerfile
     container_name: network-service
     restart: unless-stopped
     depends_on:
@@ -116,7 +122,9 @@ services:
       - inventory-network
 
   auth-service:
-    build: ./auth-service
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
     container_name: auth-service
     restart: unless-stopped
     depends_on:
@@ -138,7 +146,9 @@ services:
       - inventory-network
 
   audit-service:
-    build: ./audit-service
+    build:
+      context: .
+      dockerfile: audit-service/Dockerfile
     container_name: audit-service
     restart: unless-stopped
     depends_on:
@@ -160,7 +170,9 @@ services:
       - inventory-network
 
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: api-gateway
     restart: unless-stopped
     depends_on:

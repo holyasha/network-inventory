@@ -1,15 +1,18 @@
 FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /build
 
-COPY .mvn .mvn
-COPY pom.xml mvnw ./
+COPY pom.xml ./
+COPY location-service/pom.xml ./location-service/
+COPY location-service/.mvn ./location-service/.mvn
+COPY location-service/mvnw ./location-service/
 
-RUN chmod +x mvnw \
+RUN cd location-service \
+    && chmod +x mvnw \
     && ./mvnw -q -DskipTests dependency:go-offline
 
-COPY src src
+COPY location-service/src ./location-service/src
 
-RUN ./mvnw -q -DskipTests package
+RUN cd location-service && ./mvnw -q -DskipTests package
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app
@@ -17,7 +20,7 @@ WORKDIR /app
 RUN useradd -r -u 10001 appuser
 USER 10001:10001
 
-COPY --from=build /build/target/*.jar /app/app.jar
+COPY --from=build /build/location-service/target/*.jar /app/app.jar
 
 ENV JAVA_OPTS=""
 EXPOSE 8082

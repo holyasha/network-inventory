@@ -11,7 +11,7 @@
 
 	<artifactId>audit-service</artifactId>
 	<name>Audit Service</name>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -1,15 +1,18 @@
 FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /build
 
-COPY .mvn .mvn
-COPY pom.xml mvnw ./
+COPY pom.xml ./
+COPY device-service/pom.xml ./device-service/
+COPY device-service/.mvn ./device-service/.mvn
+COPY device-service/mvnw ./device-service/
 
-RUN chmod +x mvnw \
+RUN cd device-service \
+    && chmod +x mvnw \
     && ./mvnw -q -DskipTests dependency:go-offline
 
-COPY src src
+COPY device-service/src ./device-service/src
 
-RUN ./mvnw -q -DskipTests package
+RUN cd device-service && ./mvnw -q -DskipTests package
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app
@@ -17,7 +20,7 @@ WORKDIR /app
 RUN useradd -r -u 10001 appuser
 USER 10001:10001
 
-COPY --from=build /build/target/*.jar /app/app.jar
+COPY --from=build /build/device-service/target/*.jar /app/app.jar
 
 ENV JAVA_OPTS=""
 EXPOSE 8081

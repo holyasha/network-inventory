@@ -11,7 +11,7 @@
 
 	<artifactId>location-service</artifactId>
 	<name>Location Service</name>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
