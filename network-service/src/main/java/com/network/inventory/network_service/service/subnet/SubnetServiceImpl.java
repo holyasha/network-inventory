@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.network_service.dto.event.AuditEventDto;
 import com.network.inventory.network_service.dto.request.subnet.CreateSubnetRequest;
 import com.network.inventory.network_service.dto.request.subnet.UpdateSubnetRequest;
 import com.network.inventory.network_service.dto.response.SubnetResponse;
@@ -13,6 +14,7 @@ import com.network.inventory.network_service.entity.Vlan;
 import com.network.inventory.network_service.exeption.ResourceNotFoundException;
 import com.network.inventory.network_service.repository.SubnetRepository;
 import com.network.inventory.network_service.repository.VlanRepository;
+import com.network.inventory.network_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,10 +22,13 @@ public class SubnetServiceImpl implements SubnetService{
     
     private final SubnetRepository subnetRepository;
     private final VlanRepository vlanRepository;
+    private final AuditProducer auditProducer;
 
-    public SubnetServiceImpl(SubnetRepository subnetRepository, VlanRepository vlanRepository) {
+    public SubnetServiceImpl(SubnetRepository subnetRepository,
+        VlanRepository vlanRepository, AuditProducer auditProducer) {
         this.subnetRepository = subnetRepository;
         this.vlanRepository = vlanRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -38,6 +43,14 @@ public class SubnetServiceImpl implements SubnetService{
                     .orElseThrow(() -> new ResourceNotFoundException("VLAN с id " + request.vlanId() + " не найден"));
             subnet.setVlan(vlan);
         }
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "Subnet",
+            subnet.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(subnetRepository.save(subnet));
     }
 
@@ -56,6 +69,14 @@ public class SubnetServiceImpl implements SubnetService{
                 .orElseThrow(() -> new ResourceNotFoundException("VLAN с id " + request.vlanId() + " не найден"));
             subnet.setVlan(vlan);
         }
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "Subnet",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(subnetRepository.save(subnet));
     }
 
@@ -80,6 +101,14 @@ public class SubnetServiceImpl implements SubnetService{
         if(!subnetRepository.existsById(id)) {
             throw new ResourceNotFoundException("Подсеть с id " + id + " не найдена");
         }
+        subnetRepository.deleteById(id);
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "Subnet",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
 
     private SubnetResponse mapToResponse(Subnet s) {

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.network_service.dto.event.AuditEventDto;
 import com.network.inventory.network_service.dto.request.networkAddress.CreateNetworkInterfaceRequest;
 import com.network.inventory.network_service.dto.request.networkAddress.UpdateNetworkInterfaceRequest;
 import com.network.inventory.network_service.dto.response.NetworkInterfaceResponse;
@@ -14,6 +15,7 @@ import com.network.inventory.network_service.exeption.DuplicateResourceException
 import com.network.inventory.network_service.exeption.ResourceNotFoundException;
 import com.network.inventory.network_service.repository.IpAddressRepository;
 import com.network.inventory.network_service.repository.NetworkInterfaceRepository;
+import com.network.inventory.network_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -21,11 +23,13 @@ public class NetworkInterfaceServiceImpl implements NetworkInterfaceService{
 
     private final NetworkInterfaceRepository networkInterfaceRepository;
     private final IpAddressRepository ipAddressRepository;
+    private final AuditProducer auditProducer;
 
     public NetworkInterfaceServiceImpl(NetworkInterfaceRepository networkInterfaceRepository,
-            IpAddressRepository ipAddressRepository) {
+            IpAddressRepository ipAddressRepository, AuditProducer auditProducer) {
         this.networkInterfaceRepository = networkInterfaceRepository;
         this.ipAddressRepository = ipAddressRepository;
+        this.auditProducer = auditProducer;
     }
     
     @Transactional
@@ -46,6 +50,14 @@ public class NetworkInterfaceServiceImpl implements NetworkInterfaceService{
                 .orElseThrow(() -> new ResourceNotFoundException("IP-адрес с id " + request.ipAddressId() + " не найден"));
             networkInterface.setIpAddress(ipAddress);
         }
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "NetworkInterface",
+            networkInterface.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(networkInterfaceRepository.save(networkInterface));
     }
 
@@ -77,6 +89,13 @@ public class NetworkInterfaceServiceImpl implements NetworkInterfaceService{
             networkInterface.setIpAddress(ipAddress);
         }
 
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "NetworkInterface",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(networkInterfaceRepository.save(networkInterface));
     }   
 
@@ -104,6 +123,14 @@ public class NetworkInterfaceServiceImpl implements NetworkInterfaceService{
             throw new ResourceNotFoundException("Сетевой интерфейс не найден с id: " + id);
         }
         networkInterfaceRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "NetworkInterface",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
 
     private NetworkInterfaceResponse mapToResponse(NetworkInterface ni) {

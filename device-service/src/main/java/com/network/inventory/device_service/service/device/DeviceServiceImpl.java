@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.device_service.dto.event.AuditEventDto;
 import com.network.inventory.device_service.dto.request.device.CreateDeviceRequest;
 import com.network.inventory.device_service.dto.request.device.UpdateDeviceRequest;
 import com.network.inventory.device_service.dto.response.DeviceListItemResponse;
@@ -17,6 +18,7 @@ import com.network.inventory.device_service.exeption.ResourceNotFoundException;
 import com.network.inventory.device_service.repository.DeviceModelRepository;
 import com.network.inventory.device_service.repository.DeviceRepository;
 import com.network.inventory.device_service.repository.DeviceStatusRepository;
+import com.network.inventory.device_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,12 +27,14 @@ public class DeviceServiceImpl implements DeviceService{
     private final DeviceRepository deviceRepository;
     private final DeviceModelRepository modelRepository;
     private final DeviceStatusRepository statusRepository;
+    private final AuditProducer auditProducer;
 
     public DeviceServiceImpl(DeviceRepository deviceRepository, DeviceModelRepository modelRepository,
-            DeviceStatusRepository statusRepository) {
+            DeviceStatusRepository statusRepository, AuditProducer auditProducer) {
         this.deviceRepository = deviceRepository;
         this.modelRepository = modelRepository;
         this.statusRepository = statusRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Override
@@ -60,6 +64,14 @@ public class DeviceServiceImpl implements DeviceService{
         device.setComment(request.comment());
 
         Device saved = deviceRepository.save(device);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service",
+            "Device",
+            saved.getId(),
+            "CREATE",
+            "system" // замена
+        ));
         return mapToResponse(saved);
     }
 
@@ -108,6 +120,14 @@ public class DeviceServiceImpl implements DeviceService{
         device.setComment(request.comment());
 
         Device updated = deviceRepository.save(device);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service",
+            "Device",
+            id,
+            "UPDATE",
+            "system" //замена
+        ));
         return mapToResponse(updated);
     }
 
@@ -150,7 +170,15 @@ public class DeviceServiceImpl implements DeviceService{
             throw new ResourceNotFoundException("Устройство с id " + id + " не найдено");
         }
         deviceRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service",
+            "Device",
+            id, "DELETE",
+            "system" //замена
+        ));
     }
+
     private DeviceResponse mapToResponse(Device device) {
         DeviceModel model = device.getDeviceModel();
         return new DeviceResponse(

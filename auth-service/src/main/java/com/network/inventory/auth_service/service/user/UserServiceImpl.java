@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.auth_service.dto.event.AuditEventDto;
 import com.network.inventory.auth_service.dto.request.user.CreateUserRequest;
 import com.network.inventory.auth_service.dto.request.user.UpdateUserRequest;
 import com.network.inventory.auth_service.dto.response.UserResponse;
@@ -17,6 +18,7 @@ import com.network.inventory.auth_service.exeption.DuplicateResourceException;
 import com.network.inventory.auth_service.exeption.ResourceNotFoundException;
 import com.network.inventory.auth_service.repository.RoleRepository;
 import com.network.inventory.auth_service.repository.UserRepository;
+import com.network.inventory.auth_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,13 +27,15 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditProducer auditProducer;
 
     
     public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, AuditProducer auditProducer) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -54,6 +58,14 @@ public class UserServiceImpl implements UserService {
         User user = new User(request.login(), passwordEncoder.encode(request.password()), request.email());
         user.setEnabled(request.enabled() != null ? request.enabled() : true);
         user.setRoles(roles);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "auth-service",
+            "User",
+            user.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(userRepository.save(user));
     }
 
@@ -98,6 +110,14 @@ public class UserServiceImpl implements UserService {
             }
             user.setRoles(roles);
         }
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "auth-service",
+            "User",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(userRepository.save(user));
     }
 
@@ -131,6 +151,13 @@ public class UserServiceImpl implements UserService {
             throw new ResourceNotFoundException("Пользователь не найден с id: " + id);
         }
         userRepository.deleteById(id);
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "auth-service",
+            "User",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
     
     private UserResponse mapToResponse(User u) {

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.device_service.dto.event.AuditEventDto;
 import com.network.inventory.device_service.dto.request.manufacturer.CreateManufacturerRequest;
 import com.network.inventory.device_service.dto.request.manufacturer.UpdateManufacturerRequest;
 import com.network.inventory.device_service.dto.response.ManufacturerResponse;
@@ -12,16 +13,19 @@ import com.network.inventory.device_service.entity.Manufacturer;
 import com.network.inventory.device_service.exeption.DuplicateResourceException;
 import com.network.inventory.device_service.exeption.ResourceNotFoundException;
 import com.network.inventory.device_service.repository.ManufacturerRepository;
+import com.network.inventory.device_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
 public class ManufacturerServiceImpl implements ManufacturerService{
 
     private final ManufacturerRepository manufacturerRepository;
+    private final AuditProducer auditProducer;
 
     
-    public ManufacturerServiceImpl(ManufacturerRepository manufacturerRepository) {
+    public ManufacturerServiceImpl(ManufacturerRepository manufacturerRepository, AuditProducer auditProducer) {
         this.manufacturerRepository = manufacturerRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -31,6 +35,14 @@ public class ManufacturerServiceImpl implements ManufacturerService{
             throw new DuplicateResourceException("Производитель с наименованием " + request.name() + " уже существует");
         }
         Manufacturer saved = manufacturerRepository.save(new Manufacturer(request.name(),request.country()));
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "Manufacturer", 
+            saved.getId(), 
+            "CREATE",
+            "system" //замена
+        ));
         return mapToResponse(saved);
     }
 
@@ -49,6 +61,14 @@ public class ManufacturerServiceImpl implements ManufacturerService{
         }
         if (request.country()!=null) manufacturer.setCountry(request.country());
        Manufacturer saved = manufacturerRepository.save(manufacturer);
+
+       auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "Manufacturer",
+            id,
+            "UPDATE",
+            "system" //замена
+        ));
        return mapToResponse(saved); 
     }
 
@@ -76,6 +96,14 @@ public class ManufacturerServiceImpl implements ManufacturerService{
             throw new ResourceNotFoundException("Производитель с id " + id + " не найден");
         }
         manufacturerRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "Manufacturer", 
+            id,
+            "DELETE",
+            "system" //замена
+        ));
     }
 
     private ManufacturerResponse mapToResponse(Manufacturer m) {

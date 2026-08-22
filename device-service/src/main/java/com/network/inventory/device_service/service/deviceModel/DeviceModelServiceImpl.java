@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.device_service.dto.event.AuditEventDto;
 import com.network.inventory.device_service.dto.request.deviceModel.CreateDeviceModelRequest;
 import com.network.inventory.device_service.dto.request.deviceModel.UpdateDeviceModelRequest;
 import com.network.inventory.device_service.dto.response.DeviceModelResponse;
@@ -16,6 +17,7 @@ import com.network.inventory.device_service.exeption.ResourceNotFoundException;
 import com.network.inventory.device_service.repository.DeviceModelRepository;
 import com.network.inventory.device_service.repository.DeviceTypeRepository;
 import com.network.inventory.device_service.repository.ManufacturerRepository;
+import com.network.inventory.device_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -24,13 +26,16 @@ public class DeviceModelServiceImpl implements DeviceModelService {
     private final DeviceModelRepository deviceModelRepository;
     private final ManufacturerRepository manufacturerRepository;
     private final DeviceTypeRepository deviceTypeRepository;
+    private final AuditProducer auditProducer;
 
     
     public DeviceModelServiceImpl(DeviceModelRepository deviceModelRepository,
-            ManufacturerRepository manufacturerRepository, DeviceTypeRepository deviceTypeRepository) {
+            ManufacturerRepository manufacturerRepository, DeviceTypeRepository deviceTypeRepository,
+            AuditProducer auditProducer) {
         this.deviceModelRepository = deviceModelRepository;
         this.manufacturerRepository = manufacturerRepository;
         this.deviceTypeRepository = deviceTypeRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -50,6 +55,14 @@ public class DeviceModelServiceImpl implements DeviceModelService {
         deviceModel.setPortsCount(request.portsCount());
         deviceModel.setManagementType(request.managementType());
         DeviceModel saved = deviceModelRepository.save(deviceModel);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service",
+            "DeviceModel",
+            saved.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(saved);
     }
 
@@ -84,6 +97,14 @@ public class DeviceModelServiceImpl implements DeviceModelService {
         deviceModel.setPortsCount(request.portsCount());
         deviceModel.setManagementType(request.managementType());
         DeviceModel updated = deviceModelRepository.save(deviceModel);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "DeviceModel", 
+            id, 
+            "UPDATE",
+            "system" //замена
+        ));
         return mapToResponse(updated);
     }
 
@@ -114,6 +135,14 @@ public class DeviceModelServiceImpl implements DeviceModelService {
             throw new ResourceNotFoundException("Модель устройства с id " + id + " не найдена");
         }
         deviceModelRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "DeviceModel", 
+            id, 
+            "DELETE",
+            "system" //замена
+        ));
     }
     
     private DeviceModelResponse mapToResponse(DeviceModel dm) {

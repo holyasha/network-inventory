@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.location_service.dto.event.AuditEventDto;
 import com.network.inventory.location_service.dto.request.rack.CreateRackRequest;
 import com.network.inventory.location_service.dto.request.rack.UpdateRackRequest;
 import com.network.inventory.location_service.dto.response.RackResponse;
@@ -13,6 +14,7 @@ import com.network.inventory.location_service.entity.Room;
 import com.network.inventory.location_service.exeption.ResourceNotFoundException;
 import com.network.inventory.location_service.repository.RackRepository;
 import com.network.inventory.location_service.repository.RoomRepository;
+import com.network.inventory.location_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,11 +22,14 @@ public class RackServiceImpl implements RackService{
 
     private final RackRepository rackRepository;
     private final RoomRepository roomRepository;
+    private final AuditProducer auditProducer;
 
     
-    public RackServiceImpl(RackRepository rackRepository, RoomRepository roomRepository) {
+    public RackServiceImpl(RackRepository rackRepository, 
+        RoomRepository roomRepository, AuditProducer auditProducer) {
         this.rackRepository = rackRepository;
         this.roomRepository = roomRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -35,6 +40,14 @@ public class RackServiceImpl implements RackService{
         Rack rack = new Rack(room, request.code(), request.height());
         rack.setManufacturer(request.manufacturer());
         rack.setDescription(request.description());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "Rack",
+            rack.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(rackRepository.save(rack));
     }
     
@@ -52,6 +65,14 @@ public class RackServiceImpl implements RackService{
         if (request.height() != null) rack.setHeight(request.height());
         rack.setManufacturer(request.manufacturer());
         rack.setDescription(request.description());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "Rack",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(rackRepository.save(rack));
     }
 
@@ -73,6 +94,14 @@ public class RackServiceImpl implements RackService{
             throw new ResourceNotFoundException("Стойка с id " + id + " не найдена");
         }
         rackRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "Rack",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
     
     private RackResponse mapToResponse(Rack r) {

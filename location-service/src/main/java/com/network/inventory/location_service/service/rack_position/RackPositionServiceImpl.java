@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.location_service.dto.event.AuditEventDto;
 import com.network.inventory.location_service.dto.request.rack_position.CreateRackPositionRequest;
 import com.network.inventory.location_service.dto.request.rack_position.UpdateRackPositionRequest;
 import com.network.inventory.location_service.dto.response.RackPositionResponse;
@@ -13,6 +14,7 @@ import com.network.inventory.location_service.entity.RackPosition;
 import com.network.inventory.location_service.exeption.ResourceNotFoundException;
 import com.network.inventory.location_service.repository.RackPositionRepository;
 import com.network.inventory.location_service.repository.RackRepository;
+import com.network.inventory.location_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,18 +22,33 @@ public class RackPositionServiceImpl implements RackPositionService {
 
     private final RackPositionRepository positionRepository;
     private final RackRepository rackRepository;
+    private final AuditProducer auditProducer;
 
     
-    public RackPositionServiceImpl(RackPositionRepository positionRepository, RackRepository rackRepository) {
+    public RackPositionServiceImpl(RackPositionRepository positionRepository, 
+        RackRepository rackRepository, AuditProducer auditProducer) {
         this.positionRepository = positionRepository;
         this.rackRepository = rackRepository;
+        this.auditProducer = auditProducer;
     }
     @Transactional
     @Override
     public RackPositionResponse createRackPosition(CreateRackPositionRequest request) {
         Rack rack = rackRepository.findById(request.rackId())
             .orElseThrow(() -> new ResourceNotFoundException("Стойка с id " + request.rackId() + " не найдена"));
-        RackPosition rackPosition = new RackPosition(rack, request.positionU(), request.occupied() != null ? request.occupied() : false);
+        RackPosition rackPosition = new RackPosition(
+            rack,
+            request.positionU(),
+            request.occupied() != null ? request.occupied() : false
+        );
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "RackPosition",
+            rackPosition.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(positionRepository.save(rackPosition));
     }
     @Transactional
@@ -41,6 +58,14 @@ public class RackPositionServiceImpl implements RackPositionService {
             .orElseThrow(() -> new ResourceNotFoundException("Позиция стойки с id " + id + " не найдена"));
         if(request.occupied() != null) rackPosition.setOccupied(request.occupied());
         if(request.positionU() != null) rackPosition.setPositionU(request.positionU());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "RackPosition",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(positionRepository.save(rackPosition));
     }
 
@@ -65,6 +90,14 @@ public class RackPositionServiceImpl implements RackPositionService {
     public void deleteRackPosition(Long id) {
         if (!positionRepository.existsById(id)) throw new ResourceNotFoundException("Позиция стойки с id " + id + " не найдена");
         positionRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "RackPosition",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
 
     private final RackPositionResponse mapToResponse(RackPosition r) {

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.location_service.dto.event.AuditEventDto;
 import com.network.inventory.location_service.dto.request.station.CreateStationRequest;
 import com.network.inventory.location_service.dto.request.station.UpdateStationRequest;
 import com.network.inventory.location_service.dto.response.StationResponse;
@@ -12,16 +13,19 @@ import com.network.inventory.location_service.entity.Station;
 import com.network.inventory.location_service.exeption.DuplicateResourceException;
 import com.network.inventory.location_service.exeption.ResourceNotFoundException;
 import com.network.inventory.location_service.repository.StationRepository;
+import com.network.inventory.location_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
 public class StationServiceImpl implements StationService{
 
     private final StationRepository stationRepository;
+    private final AuditProducer auditProducer;
     
     
-    public StationServiceImpl(StationRepository stationRepository) {
+    public StationServiceImpl(StationRepository stationRepository, AuditProducer auditProducer) {
         this.stationRepository = stationRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -32,6 +36,14 @@ public class StationServiceImpl implements StationService{
         }
         Station station = new Station(request.name(), request.line(), request.address());
         station.setDescription(request.description());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "Station",
+            station.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(stationRepository.save(station));
     }
 
@@ -49,6 +61,14 @@ public class StationServiceImpl implements StationService{
         if(request.line() != null) station.setLine(request.line());
         station.setAdress(request.address());
         station.setDescription(request.description());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "Station",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(stationRepository.save(station));
         }
 
@@ -82,6 +102,13 @@ public class StationServiceImpl implements StationService{
             throw new ResourceNotFoundException("Станция с id " + id + " не найдена");
         }
         stationRepository.deleteById(id);
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "Station",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
 
     public StationResponse mapToResponse(Station s) {

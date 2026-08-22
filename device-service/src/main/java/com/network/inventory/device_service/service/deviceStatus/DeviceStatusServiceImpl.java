@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.device_service.dto.event.AuditEventDto;
 import com.network.inventory.device_service.dto.request.deviceStatus.CreateDeviceStatusRequest;
 import com.network.inventory.device_service.dto.request.deviceStatus.UpdateDeviceStatusRequest;
 import com.network.inventory.device_service.dto.response.DeviceStatusResponse;
@@ -12,17 +13,19 @@ import com.network.inventory.device_service.entity.DeviceStatus;
 import com.network.inventory.device_service.exeption.DuplicateResourceException;
 import com.network.inventory.device_service.exeption.ResourceNotFoundException;
 import com.network.inventory.device_service.repository.DeviceStatusRepository;
+import com.network.inventory.device_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
 public class DeviceStatusServiceImpl implements DeviceStatusService{
 
     private final DeviceStatusRepository deviceStatusRepository;
-
+    private final AuditProducer auditProducer;
     
 
-    public DeviceStatusServiceImpl(DeviceStatusRepository deviceStatusRepository) {
+    public DeviceStatusServiceImpl(DeviceStatusRepository deviceStatusRepository, AuditProducer auditProducer) {
         this.deviceStatusRepository = deviceStatusRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -32,6 +35,14 @@ public class DeviceStatusServiceImpl implements DeviceStatusService{
             throw new DuplicateResourceException("Статус с наименованием " + request.name() + " уже существует");
         }
         DeviceStatus saved = deviceStatusRepository.save(new DeviceStatus(request.name(), request.color()));
+        
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "DeviceStatus", 
+            saved.getId(), 
+            "CREATE",
+            "system" //замена
+        ));
         return mapToResponse(saved);
     }
 
@@ -47,6 +58,14 @@ public class DeviceStatusServiceImpl implements DeviceStatusService{
         deviceStatus.setName(request.name());
         deviceStatus.setColor(request.color());
         DeviceStatus saved = deviceStatusRepository.save(deviceStatus);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "DeviceStatus", 
+            id,
+            "UPDATE",
+            "system" //замена
+        ));
         return mapToResponse(saved);
     }
 
@@ -79,6 +98,14 @@ public class DeviceStatusServiceImpl implements DeviceStatusService{
             throw new ResourceNotFoundException("Статус с id " + id + " не найден");
         }
         deviceStatusRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "device-service", 
+            "DeviceStatus", 
+            id, 
+            "DELETE",
+            "system" //замена
+        ));
     }
 
     private DeviceStatusResponse mapToResponse(DeviceStatus d) {

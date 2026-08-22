@@ -3,6 +3,7 @@ package com.network.inventory.location_service.service.device_location;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.location_service.dto.event.AuditEventDto;
 import com.network.inventory.location_service.dto.request.device_location.CreateDeviceLocationRequest;
 import com.network.inventory.location_service.dto.request.device_location.UpdateDeviceLocationRequest;
 import com.network.inventory.location_service.dto.response.DeviceLocationResponse;
@@ -13,6 +14,7 @@ import com.network.inventory.location_service.exeption.DuplicateResourceExceptio
 import com.network.inventory.location_service.exeption.ResourceNotFoundException;
 import com.network.inventory.location_service.repository.DeviceLocationRepository;
 import com.network.inventory.location_service.repository.RackPositionRepository;
+import com.network.inventory.location_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,12 +22,14 @@ public class DeviceLocationServiceImpl implements DeviceLocationService {
 
     private final DeviceLocationRepository deviceLocationRepository;
     private final RackPositionRepository rackPositionRepository;
+    private final AuditProducer auditProducer;
 
     
     public DeviceLocationServiceImpl(DeviceLocationRepository deviceLocationRepository,
-            RackPositionRepository rackPositionRepository) {
+            RackPositionRepository rackPositionRepository, AuditProducer auditProducer) {
         this.deviceLocationRepository = deviceLocationRepository;
         this.rackPositionRepository = rackPositionRepository;
+        this.auditProducer = auditProducer;
     }
     
     @Transactional
@@ -38,6 +42,14 @@ public class DeviceLocationServiceImpl implements DeviceLocationService {
             .orElseThrow(() -> new ResourceNotFoundException("Позиция стойки с id " + request.rackPositionId() + " не найдена"));
         DeviceLocation deviceLocation = new DeviceLocation(request.deviceId(), rackPosition);
         deviceLocation.setInstalledAt(request.installedAt());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "DeviceLocation",
+            deviceLocation.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(deviceLocationRepository.save(deviceLocation));
     }
 
@@ -54,6 +66,13 @@ public class DeviceLocationServiceImpl implements DeviceLocationService {
         if (request.installedAt() != null) {
             deviceLocation.setInstalledAt(request.installedAt());
         }
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "DeviceLocation",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(deviceLocationRepository.save(deviceLocation));
     }
 
@@ -74,6 +93,13 @@ public class DeviceLocationServiceImpl implements DeviceLocationService {
             throw new ResourceNotFoundException("Размещение устройства с id " + id + " не найдено");
         }
         deviceLocationRepository.deleteById(id);
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "location-service",
+            "DeviceLocation",
+            id,
+            "DELETE",
+            "system" //замена
+        ));
     }
 
     private DeviceLocationResponse mapToResponse(DeviceLocation d) {

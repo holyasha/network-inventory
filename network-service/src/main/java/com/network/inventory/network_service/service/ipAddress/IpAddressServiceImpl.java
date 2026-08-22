@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.network_service.dto.event.AuditEventDto;
 import com.network.inventory.network_service.dto.request.ipAddress.CreateIpAddressRequest;
 import com.network.inventory.network_service.dto.request.ipAddress.UpdateIpAddressRequest;
 import com.network.inventory.network_service.dto.response.IpAddressResponse;
@@ -14,6 +15,7 @@ import com.network.inventory.network_service.exeption.DuplicateResourceException
 import com.network.inventory.network_service.exeption.ResourceNotFoundException;
 import com.network.inventory.network_service.repository.IpAddressRepository;
 import com.network.inventory.network_service.repository.SubnetRepository;
+import com.network.inventory.network_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
@@ -21,12 +23,13 @@ public class IpAddressServiceImpl implements IpAddressService{
 
     private final IpAddressRepository ipAddressRepository;
     private final SubnetRepository subnetRepository;
+    private final AuditProducer auditProducer;
 
-    
-
-    public IpAddressServiceImpl(IpAddressRepository ipAddressRepository, SubnetRepository subnetRepository) {
+    public IpAddressServiceImpl(IpAddressRepository ipAddressRepository,
+        SubnetRepository subnetRepository, AuditProducer auditProducer) {
         this.ipAddressRepository = ipAddressRepository;
         this.subnetRepository = subnetRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -43,6 +46,13 @@ public class IpAddressServiceImpl implements IpAddressService{
         request.allocated() != null ? request.allocated() : false,
         request.reserved() != null ? request.reserved() : false);
 
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "IpAddress",
+            ipAddress.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(ipAddressRepository.save(ipAddress));
     }
 
@@ -70,6 +80,13 @@ public class IpAddressServiceImpl implements IpAddressService{
         if (request.allocated() != null) ipAddress.setAllocated(request.allocated());
         if (request.reserved() != null) ipAddress.setReserved(request.reserved());
 
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "IpAddress",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(ipAddressRepository.save(ipAddress));
     }
 
@@ -102,6 +119,14 @@ public class IpAddressServiceImpl implements IpAddressService{
             throw new ResourceNotFoundException("IP-адрес с id " + id + " не найден");
         }
         ipAddressRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "IpAddress",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
     
     private IpAddressResponse mapToResponse(IpAddress ip) {

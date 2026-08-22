@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.network_service.dto.event.AuditEventDto;
 import com.network.inventory.network_service.dto.request.vlan.CreateVlanRequest;
 import com.network.inventory.network_service.dto.request.vlan.UpdateVlanRequest;
 import com.network.inventory.network_service.dto.response.VlanResponse;
@@ -12,15 +13,18 @@ import com.network.inventory.network_service.entity.Vlan;
 import com.network.inventory.network_service.exeption.DuplicateResourceException;
 import com.network.inventory.network_service.exeption.ResourceNotFoundException;
 import com.network.inventory.network_service.repository.VlanRepository;
+import com.network.inventory.network_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
 public class VlanServiceImpl implements VlanService{
     
     private final VlanRepository vlanRepository;
+    private final AuditProducer auditProducer;
 
-    public VlanServiceImpl(VlanRepository vlanRepository) {
+    public VlanServiceImpl(VlanRepository vlanRepository, AuditProducer auditProducer) {
         this.vlanRepository = vlanRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -32,6 +36,14 @@ public class VlanServiceImpl implements VlanService{
         Vlan vlan = new Vlan(request.number());
         vlan.setName(request.name());
         vlan.setDescription(request.description());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "Vlan",
+            vlan.getId(),
+            "CREATE",
+            "system"//замена
+        ));
         return mapToResponse(vlanRepository.save(vlan));
     }
 
@@ -50,6 +62,14 @@ public class VlanServiceImpl implements VlanService{
         }
         vlan.setName(request.name());
         vlan.setDescription(request.description());
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "Vlan",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(vlanRepository.save(vlan));
     }
 
@@ -77,6 +97,14 @@ public class VlanServiceImpl implements VlanService{
             throw new ResourceNotFoundException("VLAN с id " + id + " не найден");
         }
         vlanRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "network-service",
+            "Vlan",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
 
     private VlanResponse mapToResponse(Vlan v) {

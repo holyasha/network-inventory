@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.network.inventory.auth_service.dto.event.AuditEventDto;
 import com.network.inventory.auth_service.dto.request.role.CreateRoleRequest;
 import com.network.inventory.auth_service.dto.request.role.UpdateRoleRequest;
 import com.network.inventory.auth_service.dto.response.RoleResponse;
@@ -12,16 +13,19 @@ import com.network.inventory.auth_service.entity.Role;
 import com.network.inventory.auth_service.exeption.DuplicateResourceException;
 import com.network.inventory.auth_service.exeption.ResourceNotFoundException;
 import com.network.inventory.auth_service.repository.RoleRepository;
+import com.network.inventory.auth_service.service.AuditProducer;
 
 @Service
 @Transactional(readOnly = true)
 public class RoleServiceImpl implements RoleService{
 
     private final RoleRepository roleRepository;
+    private final AuditProducer auditProducer;
 
     
-    public RoleServiceImpl(RoleRepository roleRepository) {
+    public RoleServiceImpl(RoleRepository roleRepository, AuditProducer auditProducer) {
         this.roleRepository = roleRepository;
+        this.auditProducer = auditProducer;
     }
 
     @Transactional
@@ -30,7 +34,15 @@ public class RoleServiceImpl implements RoleService{
         if (roleRepository.findByName(request.name()).isPresent()) {
             throw new DuplicateResourceException("Роль с названием " + request.name() + " уже существует");
         }
-        return mapToResponse(roleRepository.save(new Role(request.name())));
+        Role saved = new Role(request.name());
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "auth-service",
+            "Role",
+            saved.getId(),
+            "CREATE",
+            "system"//замена
+        ));
+        return mapToResponse(roleRepository.save(saved));
     }
 
     @Transactional
@@ -47,6 +59,13 @@ public class RoleServiceImpl implements RoleService{
             });
             role.setName(request.name());
         }
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "auth-service",
+            "Role",
+            id,
+            "UPDATE",
+            "system"//замена
+        ));
         return mapToResponse(roleRepository.save(role));
     }
 
@@ -74,6 +93,14 @@ public class RoleServiceImpl implements RoleService{
             throw new ResourceNotFoundException("Роль с id " + id + " не найдена");
         }
         roleRepository.deleteById(id);
+
+        auditProducer.sendAuditEvent(new AuditEventDto(
+            "auth-service",
+            "Role",
+            id,
+            "DELETE",
+            "system"//замена
+        ));
     }
     
     private RoleResponse mapToResponse(Role r) {
