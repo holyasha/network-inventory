@@ -140,6 +140,8 @@ services:
     secrets:
       - source: pg_password
         target: spring.datasource.password
+      - source: jwt_secret
+        target: jwt.secret
     ports:
       - "8084:8084"
     networks:
@@ -181,6 +183,11 @@ services:
       - network-service
       - auth-service
       - audit-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+    secrets:
+      - source: jwt_secret
+        target: jwt.secret
     ports:
       - "8080:8080"
     networks:
@@ -196,3 +203,5 @@ networks:
 secrets:
   pg_password:
     file: ./secrets/pg_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
