@@ -19,7 +19,7 @@ import jakarta.validation.Valid;
 public class AuthController {
     private final AuthService authService;
 
-    @Value("${jwt.coockie.max-age}")
+    @Value("${jwt.cookie.max-age}")
     private int cookieMaxAge;
 
     public AuthController(AuthService authService) {

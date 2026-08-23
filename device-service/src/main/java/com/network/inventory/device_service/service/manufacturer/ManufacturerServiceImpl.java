@@ -34,15 +34,17 @@ public class ManufacturerServiceImpl implements ManufacturerService{
         if (manufacturerRepository.findByName(request.name()).isPresent()) {
             throw new DuplicateResourceException("Производитель с наименованием " + request.name() + " уже существует");
         }
-        Manufacturer saved = manufacturerRepository.save(new Manufacturer(request.name(),request.country()));
+        Manufacturer manufacturer = new Manufacturer(request.name(), request.country());
+        manufacturer.setWebsite(request.website());
+        Manufacturer saved = manufacturerRepository.save(manufacturer);
 
-        auditProducer.sendAuditEvent(new AuditEventDto(
-            "device-service", 
-            "Manufacturer", 
-            saved.getId(), 
-            "CREATE",
-            "system" //замена
-        ));
+        // auditProducer.sendAuditEvent(new AuditEventDto(
+        //     "device-service",
+        //     "Manufacturer",
+        //     saved.getId(),
+        //     "CREATE",
+        //     "system"
+        // ));
         return mapToResponse(saved);
     }
 
@@ -60,6 +62,7 @@ public class ManufacturerServiceImpl implements ManufacturerService{
         manufacturer.setName(request.name());
         }
         if (request.country()!=null) manufacturer.setCountry(request.country());
+        if (request.website()!=null) manufacturer.setWebsite(request.website());
        Manufacturer saved = manufacturerRepository.save(manufacturer);
 
        auditProducer.sendAuditEvent(new AuditEventDto(
@@ -111,6 +114,7 @@ public class ManufacturerServiceImpl implements ManufacturerService{
             m.getId(),
             m.getName(),
             m.getCountry(),
+            m.getWebsite(),
             m.getUpdatedAt(),
             m.getCreatedAt()
         );

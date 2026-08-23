@@ -8,7 +8,9 @@ public record CreateManufacturerRequest(
     String name,
 
     @NotBlank(message = "Страна производителя обязательна!")
-    String country
+    String country,
+
+    String website
 ) {
-    
+
 }

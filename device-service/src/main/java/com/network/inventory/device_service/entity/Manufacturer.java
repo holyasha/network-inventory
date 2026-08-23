@@ -25,6 +25,9 @@ public class Manufacturer {
     @Column(nullable = false, length = 100)
     private String country;
 
+    @Column(length = 255)
+    private String website;
+
     @Column(name = "created_at",nullable = false, updatable = false)
     LocalDateTime createdAt;
 
@@ -34,6 +37,9 @@ public class Manufacturer {
     public Manufacturer(String name, String country) {
         this.name = name;
         this.country = country;
+    }
+
+    public Manufacturer() {
     }
 
     @PrePersist
@@ -69,6 +75,14 @@ public class Manufacturer {
 
     public void setCountry(String country) {
         this.country = country;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
     }
 
     public LocalDateTime getCreatedAt() {

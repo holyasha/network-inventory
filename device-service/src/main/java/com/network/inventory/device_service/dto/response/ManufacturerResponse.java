@@ -10,9 +10,11 @@ public record ManufacturerResponse(
 
     String country,
 
+    String website,
+
     LocalDateTime updatedAt,
 
     LocalDateTime createdAt
 ) {
-    
+
 }
